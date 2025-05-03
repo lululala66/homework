@@ -1,13 +1,13 @@
 import threading
-import os
-import pandas as pd
+import time
+import logging
+from datetime import datetime , timedelta
+import mysql.connector
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import time
-import logging
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -26,10 +26,38 @@ def setup_driver():
     return webdriver.Chrome(options=options)
 
 
-def fetch_youbike_data(city_values):
-    """爬取 YouBike 資料並存入 Excel"""
-    start_time = time.time()  # 開始計時
+def connect_to_database():
+    """連線到 MySQL 資料庫"""
+    try:
+        conn = mysql.connector.connect(
+            host="127.0.0.1",
+            user="root",
+            password="lululala",
+            database="youbike_data",
+            port=3306,
+        )
+        logging.info("成功連線到資料庫")
+        return conn
+    except mysql.connector.Error as e:
+        logging.error(f"連線資料庫失敗: {e}")
+        return None
 
+
+def fetch_youbike_data(city_values):
+    """爬取 YouBike 資料並存入 MySQL 資料庫"""
+    start_time = time.time()  # 開始計時
+    now = datetime.now() + timedelta(minutes=3)  # 台灣時間（UTC+8）
+    # 初始化資料庫連線
+    conn = connect_to_database()
+    if not conn:
+        return
+    cursor = conn.cursor()
+    insert_query = """
+        INSERT INTO Taichung_youbike_data (city, district, station_name, record_time, bikes_available, docks_available)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    # 初始化 WebDriver
     driver = setup_driver()
     driver.get("https://www.youbike.com.tw/region/i/stations/list/")
 
@@ -43,10 +71,6 @@ def fetch_youbike_data(city_values):
         logging.error(f"等待頁面加載時發生錯誤: {e}")
         driver.quit()
         return
-
-    # 建立資料夾來存放 Excel 檔案
-    output_folder = "YouBike_Data"
-    os.makedirs(output_folder, exist_ok=True)
 
     def switch_city(city_value):
         """切換到指定縣市"""
@@ -62,16 +86,13 @@ def fetch_youbike_data(city_values):
         return True
 
     def process_pagination():
-        """處理分頁並返回所有站點資料"""
-        data = []
+        """處理分頁並將資料寫入資料庫"""
         while True:
-            # 取得當前頁面的 HTML
-            html = driver.page_source
-            soup = BeautifulSoup(html, "html.parser")
+            soup = BeautifulSoup(driver.page_source, "html.parser")
             station_forms = soup.find_all("div", class_="station-form")
 
             if not station_forms:
-                logging.warning("未找到任何站點資訊，請檢查 HTML 結構。")
+                logging.warning("未找到任何站點資訊")
                 break
 
             for station_form in station_forms:
@@ -81,63 +102,60 @@ def fetch_youbike_data(city_values):
                     for ol in ol_elements:
                         li_elements = ol.find_all("li")
                         if len(li_elements) >= 5:
-                            data.append({
-                                "城市": li_elements[0].text.strip(),
-                                "區域": li_elements[1].text.strip(),
-                                "站點": li_elements[2].text.strip(),
-                                "可用車": li_elements[3].text.strip(),
-                                "可停位": li_elements[4].text.strip(),
-                            })
-                        else:
-                            logging.warning("站點資訊不完整，請檢查 HTML 結構！")
+                            try:
+                                city = li_elements[0].text.strip()
+                                district = li_elements[1].text.strip()
+                                name = li_elements[2].text.strip()
+                                bikes = int(li_elements[3].text.strip())
+                                docks = int(li_elements[4].text.strip())
+                                
+
+                                cursor.execute(
+                                    insert_query,
+                                    (city, district, name, now, bikes, docks),
+                                )
+                                conn.commit()
+                                logging.info(f"✅ 已寫入資料：{name}（{bikes} / {docks}）")
+
+                            except Exception as e:
+                                logging.warning(f"寫入 MySQL 發生錯誤: {e}")
                 else:
-                    logging.warning("找不到 ul.item-inner2，請檢查 HTML 結構！")
+                    logging.warning("找不到 ul.item-inner2")
 
             # 嘗試點擊下一頁按鈕
             try:
                 next_button = driver.find_element(By.CLASS_NAME, "cdp_i.next")
                 if "disabled" in next_button.get_attribute("class"):
-                    logging.info("已到最後一頁。")
+                    logging.info("已到最後一頁")
                     break
                 next_button.click()
                 time.sleep(2)  # 等待頁面更新
             except Exception as e:
-                logging.warning(f"找不到下一頁按鈕或已到最後一頁: {e}")
+                logging.warning(f"分頁處理結束或發生錯誤: {e}")
                 break
-        return data
 
     # 處理每個縣市
     for city_value, city_name in city_values:
-        if not switch_city(city_value):
-            continue
+        if switch_city(city_value):
+            process_pagination()
 
-        data = process_pagination()
-        if data:
-            # 將資料存入 DataFrame 並寫入 Excel
-            df = pd.DataFrame(data)
-            output_path = os.path.join(output_folder, f"{city_name}.xlsx")
-            df.to_excel(output_path, index=False)
-            logging.info(f"資料已寫入 {output_path}")
-
-    # 關閉瀏覽器
+    # 關閉資源
     driver.quit()
+    cursor.close()
+    conn.close()
 
-    # 計算總耗時
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    logging.info(f"所有資料已成功寫入 Excel 檔案！總耗時: {elapsed_time:.2f} 秒")
+    elapsed_time = time.time() - start_time
+    logging.info(f"✅ 所有資料已寫入資料庫！耗時: {elapsed_time:.2f} 秒")
 
 
-# 使用多執行緒爬取不同縣市資料
-threads = [
-    threading.Thread(target=fetch_youbike_data, args=([("06", "台中市")],), name="台中市"),
-    threading.Thread(target=fetch_youbike_data, args=([("15", "臺東縣")],), name="臺東縣"),
-]
+if __name__ == "__main__":
+    while True:
+        threads = [
+            threading.Thread(target=fetch_youbike_data, args=([("06", "台中市")],), name="台中市"),
+        ]
 
-for thread in threads:
-    thread.start()
+        for thread in threads:
+            thread.start()
 
-for thread in threads:
-    thread.join()
-
-logging.info("所有執行緒已完成！")
+        logging.info("等待 10 分鐘後再次執行...")
+        time.sleep(600)  # 每 600 秒（10 分鐘）執行一次
