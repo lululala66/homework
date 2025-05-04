@@ -87,6 +87,8 @@ def fetch_youbike_data(city_values):
 
     def process_pagination():
         """處理分頁並將資料寫入資料庫"""
+        records = []  # 用來儲存每批次要寫入的資料
+
         while True:
             soup = BeautifulSoup(driver.page_source, "html.parser")
             station_forms = soup.find_all("div", class_="station-form")
@@ -108,14 +110,18 @@ def fetch_youbike_data(city_values):
                                 name = li_elements[2].text.strip()
                                 bikes = int(li_elements[3].text.strip())
                                 docks = int(li_elements[4].text.strip())
-                                
 
-                                cursor.execute(
-                                    insert_query,
-                                    (city, district, name, now, bikes, docks),
-                                )
-                                conn.commit()
-                                logging.info(f"✅ 已寫入資料：{name}（{bikes} / {docks}）")
+                                records.append((city, district, name, now, bikes, docks))
+
+                                # 每 10 筆資料一次提交
+                                if len(records) >= 100:
+                                    cursor.executemany(
+                                        insert_query,
+                                        records
+                                    )
+                                    conn.commit()  # 批次提交
+                                    logging.info(f"✅ 已寫入資料：{len(records)} 筆")
+                                    records.clear()  # 清空當前批次資料
 
                             except Exception as e:
                                 logging.warning(f"寫入 MySQL 發生錯誤: {e}")
@@ -134,6 +140,15 @@ def fetch_youbike_data(city_values):
                 logging.warning(f"分頁處理結束或發生錯誤: {e}")
                 break
 
+        # 如果還有未提交的資料，最後一次提交
+        if records:
+            cursor.executemany(
+                insert_query,
+                records
+            )
+            conn.commit()
+            logging.info(f"✅ 最後提交資料：{len(records)} 筆")
+
     # 處理每個縣市
     for city_value, city_name in city_values:
         if switch_city(city_value):
@@ -147,15 +162,20 @@ def fetch_youbike_data(city_values):
     elapsed_time = time.time() - start_time
     logging.info(f"✅ 所有資料已寫入資料庫！耗時: {elapsed_time:.2f} 秒")
 
-
 if __name__ == "__main__":
     while True:
-        threads = [
-            threading.Thread(target=fetch_youbike_data, args=([("06", "台中市")],), name="台中市"),
-        ]
+        now = datetime.now()
+        if now.minute in [7, 17, 27, 37, 47, 57] :
+            threads = [
+                threading.Thread(target=fetch_youbike_data, args=([("06", "台中市")],), name="台中市"),
+            ]
 
-        for thread in threads:
-            thread.start()
+            for thread in threads:
+                thread.start()
+            
+            for thread in threads:
+                thread.join()
 
-        logging.info("等待 10 分鐘後再次執行...")
-        time.sleep(600)  # 每 600 秒（10 分鐘）執行一次
+            logging.info("等待下次執行...")
+        else:
+            time.sleep(10) # 每 10 秒檢查一次時間
