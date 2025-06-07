@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>臺中市 YouBike 即時資訊</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/script.js" defer></script>
+</head>
+<body>
+  <h1>臺中市 YouBike 即時資訊</h1>
+
+  <form method="GET">
+    <!-- 縣市選擇 -->
+    <label>
+      選擇縣市：
+      <select name="city">
+        <option selected>臺中市</option> <!-- 未來可支援多縣市 -->
+      </select>
+    </label>
+
+    <!-- 區域選擇 -->
+    <div class="districts">
+      {% for d in districts %}
+        <button
+          type="submit"
+          name="district"
+          value="{{ d }}"
+          class="district-btn {% if d in selected %}selected{% endif %}"
+        >
+          {{ d }}
+        </button>
+      {% endfor %}
+    </div>
+
+    <!-- 站點搜尋 -->
+    <label>
+      🔍 查詢站點：
+      <input type="text" id="stationInput" name="station" placeholder="請輸入站點名稱" autocomplete="off">
+      <div id="suggestions" class="suggestions"></div>
+    </label>
+  </form>
+
+  <!-- 站點資訊 -->
+  {% if stations %}
+    <div class="station-window">
+      <table>
+        <thead>
+          <tr>
+            <th>縣市</th>
+            <th>區域</th>
+            <th>站點名稱</th>
+            <th>可借車輛</th>
+            <th>可停空位</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in stations %}
+          <tr>
+            <td>{{ s.city }}</td>
+            <td>{{ s.district }}</td>
+            <td class="highlight">{{ s.station_name }}</td>
+            <td>{{ s.bikes_available }}</td>
+            <td>{{ s.docks_available }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</body>
+</html>

@@ -1,16 +1,15 @@
 import time
 import schedule
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import mysql.connector
 
 def fetch_and_store_data():
-    # 紀錄執行開始的時間
     now = datetime.now()
     print(f"🚀 開始執行：{now}")
     
     # 抓取資料
-    url = "https://datacenter.taichung.gov.tw/swagger/OpenData/34a848ab-eeb3-44fd-a842-a09cb3209a7d"
+    url = "https://datacenter.taichung.gov.tw/swagger/OpenData/b87c286d-0dce-4094-b34d-6935f3813539"
     response = requests.get(url)
     data = response.json()
 
@@ -47,11 +46,22 @@ def fetch_and_store_data():
     else:
         print("❌ stations 資料結構不是列表，請檢查 API 回應內容")
 
+    # 清除8天前的資料
+    eight_days_ago = now - timedelta(days=8)
+    try:
+        cursor.execute("""
+            DELETE FROM Taichung_station_locations
+            WHERE record_time < %s
+        """, (eight_days_ago,))
+        print(f"🧹 清除 Taichung_station_locations 舊資料，共 {cursor.rowcount} 筆")
+    except Exception as e:
+        print(f"❌ 清除舊資料失敗: {e}")
+
     # 提交並關閉資料庫連線
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ 資料匯入完成！")
+    print("✅ 資料匯入與清理完成！\n")
 
 # 設定每天早上9點和晚上9點執行一次的排程
 schedule.every().day.at("09:00").do(fetch_and_store_data)

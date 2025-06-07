@@ -1,0 +1,109 @@
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: linear-gradient(to right, #e0f7fa, #f0f4c3);
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #00695c;
+  margin-bottom: 20px;
+}
+
+form {
+  background: #ffffffdd;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+select, input[type="text"] {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 200px;
+  margin-left: 10px;
+}
+
+.districts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.district-btn {
+  padding: 8px 14px;
+  background-color: #b2dfdb;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.district-btn:hover {
+  background-color: #80cbc4;
+}
+
+.district-btn.selected {
+  background-color: #00796b;
+  color: white;
+}
+
+.station-window {
+  max-height: 65vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: #00695c;
+  color: white;
+}
+
+td, th {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  text-align: center;
+}
+
+.highlight {
+  font-weight: bold;
+  color: #004d40;
+}
+
+#suggestions {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  width: 200px;
+  z-index: 10;
+  max-height: 150px;
+  overflow-y: auto;
+  border-radius: 4px;
+}
+
+.suggestion-item {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #f0f0f0;
+}
