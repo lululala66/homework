@@ -1,3 +1,4 @@
+/* ====== 全局樣式 ====== */
 body {
   font-family: 'Noto Sans TC', sans-serif;
   background: linear-gradient(to right, #e0f7fa, #f0f4c3);
@@ -11,6 +12,7 @@ h1 {
   margin-bottom: 20px;
 }
 
+/* ====== 表單與輸入 ====== */
 form {
   background: #ffffffdd;
   padding: 20px;
@@ -23,16 +25,52 @@ label {
   display: block;
   margin-bottom: 12px;
   font-weight: bold;
+  position: relative;
 }
 
-select, input[type="text"] {
+select,
+input[type="text"] {
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
-  width: 200px;
+  width: 240px;
   margin-left: 10px;
+  box-sizing: border-box;
+  font-size: 15px;
 }
 
+/* ====== 自動補全建議框 ====== */
+.input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 260px;
+}
+
+#suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border: 1px solid #ccc;
+  z-index: 10;
+  max-height: 150px;
+  overflow-y: auto;
+  border-radius: 4px;
+  display: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.suggestion-item {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #f0f0f0;
+}
+
+/* ====== 區域按鈕 ====== */
 .districts {
   display: flex;
   flex-wrap: wrap;
@@ -47,17 +85,21 @@ select, input[type="text"] {
   border-radius: 6px;
   cursor: pointer;
   transition: 0.3s;
+  font-size: 14px;
 }
 
 .district-btn:hover {
   background-color: #80cbc4;
+  font-weight: bold;
 }
 
 .district-btn.selected {
   background-color: #00796b;
   color: white;
+  font-weight: bold;
 }
 
+/* ====== 表格樣式 ====== */
 .station-window {
   max-height: 65vh;
   overflow-y: auto;
@@ -70,40 +112,113 @@ select, input[type="text"] {
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 thead {
   background-color: #00695c;
   color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
-td, th {
+th,
+td {
   padding: 10px;
   border-bottom: 1px solid #ccc;
   text-align: center;
+  word-break: break-word;
 }
 
 .highlight {
   font-weight: bold;
   color: #004d40;
+  background-color: #e0f2f1;
+  border-radius: 6px;
+  padding: 4px;
 }
 
-#suggestions {
-  position: absolute;
-  background: white;
-  border: 1px solid #ccc;
-  width: 200px;
-  z-index: 10;
-  max-height: 150px;
-  overflow-y: auto;
-  border-radius: 4px;
+/* ====== 頁籤樣式 ====== */
+.tabs {
+  margin-bottom: 1em;
 }
 
-.suggestion-item {
-  padding: 6px 10px;
+.tab-button {
+  padding: 10px 20px;
+  margin-right: 5px;
+  border: none;
   cursor: pointer;
+  background-color: #eee;
+  border-radius: 5px 5px 0 0;
+  font-size: 16px;
+  transition: all 0.2s;
 }
 
-.suggestion-item:hover {
-  background-color: #f0f0f0;
+.tab-button:hover {
+  background-color: #ddd;
+}
+
+.tab-button.active {
+  background-color: #ffffff;
+  border-bottom: 2px solid white;
+  font-weight: bold;
+  color: #00695c;
+}
+
+.tab-content {
+  display: none;
+}
+
+/* ====== 路線規劃區 ====== */
+#map {
+  height: 500px;
+  min-height: 300px;
+  width: 100%;
+  display: block;
+  margin-top: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.2);
+  background: #f9f9f9;
+}
+
+
+.route-info {
+  margin-top: 10px;
+  font-size: 16px;
+  color: #004d40;
+  font-weight: bold;
+}
+.leaflet-container {
+  background: #f0f0f0;
+  z-index: 1;
+}
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container {
+  z-index: 2;
+}
+
+/* ====== 響應式設計（基本） ====== */
+@media (max-width: 768px) {
+  input[type="text"],
+  select {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .districts {
+    flex-direction: column;
+  }
+
+  .input-wrapper {
+    width: 100%;
+  }
+
+  table, thead, tbody, th, td, tr {
+    font-size: 14px;
+  }
 }

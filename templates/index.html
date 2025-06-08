@@ -1,71 +1,122 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>臺中市 YouBike 即時資訊</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/script.js" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
   <h1>臺中市 YouBike 即時資訊</h1>
 
-  <form method="GET">
-    <!-- 縣市選擇 -->
-    <label>
-      選擇縣市：
-      <select name="city">
-        <option selected>臺中市</option> <!-- 未來可支援多縣市 -->
-      </select>
-    </label>
+  <!-- 頁籤切換 -->
+  <div class="tabs">
+    <button class="tab-button active" data-target="tab-info">站點資訊</button>
+    <button class="tab-button" data-target="tab-route">路線規劃</button>
+  </div>
 
-    <!-- 區域選擇 -->
-    <div class="districts">
-      {% for d in districts %}
-        <button
-          type="submit"
-          name="district"
-          value="{{ d }}"
-          class="district-btn {% if d in selected %}selected{% endif %}"
-        >
-          {{ d }}
-        </button>
-      {% endfor %}
-    </div>
-
-    <!-- 站點搜尋 -->
-    <label>
-      🔍 查詢站點：
-      <input type="text" id="stationInput" name="station" placeholder="請輸入站點名稱" autocomplete="off">
-      <div id="suggestions" class="suggestions"></div>
-    </label>
-  </form>
-
-  <!-- 站點資訊 -->
-  {% if stations %}
-    <div class="station-window">
-      <table>
-        <thead>
-          <tr>
-            <th>縣市</th>
-            <th>區域</th>
-            <th>站點名稱</th>
-            <th>可借車輛</th>
-            <th>可停空位</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in stations %}
-          <tr>
-            <td>{{ s.city }}</td>
-            <td>{{ s.district }}</td>
-            <td class="highlight">{{ s.station_name }}</td>
-            <td>{{ s.bikes_available }}</td>
-            <td>{{ s.docks_available }}</td>
-          </tr>
+  <!-- 站點資訊頁籤 -->
+  <div id="tab-info" class="tab-content" style="display: block;">
+    <form id="searchForm" method="GET" autocomplete="off">
+      <label>
+        選擇縣市：
+        <select name="city" id="citySelect">
+          {% for c in cities %}
+            <option value="{{ c }}" {% if c == city %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% endif %}
+        </select>
+      </label>
+
+      <div class="districts">
+        {% for d in districts %}
+          <button type="button" class="district-btn {% if d in selected %}selected{% endif %}" data-district="{{ d }}">
+            {{ d }}
+          </button>
+          {% if d in selected %}
+            <input type="hidden" name="district" value="{{ d }}">
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <label class="input-wrapper">
+        🔍 查詢站點：
+        <input type="text" id="stationInput" name="station" placeholder="請輸入站點名稱" autocomplete="off">
+        <div id="suggestions"></div>
+      </label>
+
+      <button type="submit">查詢</button>
+    </form>
+
+    {% if stations %}
+      <div class="station-window">
+        <table>
+          <thead>
+            <tr>
+              <th>縣市</th>
+              <th>區域</th>
+              <th>站點名稱</th>
+              <th>可借車輛</th>
+              <th>可停空位</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in stations %}
+              <tr>
+                <td>{{ s.city }}</td>
+                <td>{{ s.district }}</td>
+                <td class="highlight">{{ s.station_name }}</td>
+                <td>{{ s.bikes_available }}</td>
+                <td>{{ s.docks_available }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- 路線規劃頁籤 -->
+  <div id="tab-route" class="tab-content">
+    <form id="route-form">
+      <label>
+        起點站點：
+        <input type="text" id="start" placeholder="輸入起點">
+      </label>
+      <label>
+        目的站點：
+        <input type="text" id="end" placeholder="輸入終點">
+      </label>
+      <button type="button" id="plan-route-btn">開始規劃路線</button>
+    </form>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const districtButtons = document.querySelectorAll(".district-btn");
+      districtButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const district = btn.dataset.district;
+          btn.classList.toggle("selected");
+
+          const existingInput = document.querySelector(`input[name="district"][value="${district}"]`);
+          if (btn.classList.contains("selected")) {
+            if (!existingInput) {
+              const input = document.createElement("input");
+              input.type = "hidden";
+              input.name = "district";
+              input.value = district;
+              document.getElementById("searchForm").appendChild(input);
+            }
+          } else {
+            if (existingInput) existingInput.remove();
+          }
+        });
+      });
+    });
+  </script>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
