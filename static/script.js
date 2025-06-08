@@ -152,6 +152,13 @@ map.invalidateSize();
       }
     });
   }
+
+  document.querySelectorAll(".district-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      // 這裡可以自動送出表單
+      document.getElementById("searchForm").submit();
+    });
+  });
 });
 
 async function getCoords(input) {
