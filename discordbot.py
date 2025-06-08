@@ -1,7 +1,6 @@
 import discord
 import requests
 
-
 TOKEN = "MTM4MTM0MDk2MjY0MjQ2MDc0Mg.GALeQX.29S92rmiy20XinJ7gHvDVRYaU6CzWQu36pWXYE"
 API_BASE_URL = "http://localhost:5000"  # 改成你的 API 部署網址
 
