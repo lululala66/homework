@@ -53,12 +53,12 @@ input[type="text"] {
   width: 100%;
   background: white;
   border: 1px solid #ccc;
-  z-index: 10;
-  max-height: 150px;
+  z-index: 9999; /* 提高層級，確保在所有內容之上 */
+  max-height: 200px;
   overflow-y: auto;
   border-radius: 4px;
   display: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 .suggestion-item {

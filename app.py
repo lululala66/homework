@@ -273,6 +273,32 @@ def nearest_station_api():
         "lng": nearest["longitude"],
         "distance": distance
     })
+@app.route("/station_info")
+def station_info():
+    station = request.args.get("station")
+    if not station:
+        return jsonify({"error": "請提供 station 參數"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT t.station_name, t.bikes_available, t.docks_available
+        FROM Taichung_youbike_data t
+        INNER JOIN (
+            SELECT station_name, MAX(record_time) AS latest_time
+            FROM Taichung_youbike_data
+            WHERE station_name = %s
+            GROUP BY station_name
+        ) latest
+        ON t.station_name = latest.station_name AND t.record_time = latest.latest_time
+    """, (station,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        return jsonify(result)
+    else:
+        return jsonify({"error": "查無此站"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)

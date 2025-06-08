@@ -159,6 +159,47 @@ map.invalidateSize();
       document.getElementById("searchForm").submit();
     });
   });
+  const stationInput = document.getElementById("stationInput");
+  const suggestions = document.getElementById("suggestions");
+
+  if (stationInput && suggestions) {
+    stationInput.addEventListener("input", async () => {
+      const q = stationInput.value.trim();
+      if (!q) {
+        suggestions.style.display = "none";
+        suggestions.innerHTML = "";
+        return;
+      }
+      const city = document.getElementById("citySelect")?.value || "臺中市";
+      const res = await fetch(`/search?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}`);
+      const data = await res.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        suggestions.innerHTML = data.suggestions.map(s =>
+          `<div class="suggestion-item">${s}</div>`
+        ).join("");
+        suggestions.style.display = "block";
+      } else {
+        suggestions.style.display = "none";
+        suggestions.innerHTML = "";
+      }
+    });
+
+    // 點選建議時填入
+    suggestions.addEventListener("click", e => {
+      if (e.target.classList.contains("suggestion-item")) {
+        stationInput.value = e.target.textContent;
+        suggestions.style.display = "none";
+        suggestions.innerHTML = "";
+      }
+    });
+
+    // 點外面關閉
+    document.addEventListener("click", e => {
+      if (!suggestions.contains(e.target) && e.target !== stationInput) {
+        suggestions.style.display = "none";
+      }
+    });
+  }
 });
 
 async function getCoords(input) {
